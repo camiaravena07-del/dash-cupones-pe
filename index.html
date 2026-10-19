@@ -745,18 +745,19 @@ function buildRAW(arrayBuffer) {
     }
     const ki = kIdx.get(skuBase);
 
-    // etiqueta de cupón COMBINADA (código o regla) — usada por Hoja 2, no tocar
+    // etiqueta de cupón COMPUESTA: código + promos extra aplicadas en la misma orden.
+    // La regla propia del cupón (coupon_rule_name) se omite para no duplicar.
     let code = clean(r.coupon_code).toUpperCase();
-    let cupIdx = -1;
+    const ownRule = clean(r.coupon_rule_name);                 // regla que dispara el código
+    const ruleList = clean(r.applied_rule_names) ? clean(r.applied_rule_names).split(",").map(s=>s.replace(RULE_ID_PREFIX,"").trim()).filter(Boolean) : [];
+    const extraRules = ruleList.filter(x => x !== ownRule);    // promos adicionales (no la del cupón)
+    let cupLabel;
     if (code) {
-      cupIdx = idxOf(cupones, cIdx, code);
+      cupLabel = extraRules.length ? code + " + " + extraRules.join(" + ") : code;
     } else {
-      const ruleRaw = clean(r.applied_rule_names);
-      if (ruleRaw) {
-        const rule = ruleRaw.replace(RULE_ID_PREFIX, "").trim();
-        if (rule) cupIdx = idxOf(cupones, cIdx, rule);
-      }
+      cupLabel = ruleList.length ? ruleList.join(" + ") : "";
     }
+    let cupIdx = cupLabel ? idxOf(cupones, cIdx, cupLabel) : -1;
     // código y regla POR SEPARADO (para el detalle de órdenes; una orden puede tener ambos)
     let codeI = -1, ruleI = -1;
     if (code) codeI = idxOf(codes, codeIdx, code);
